@@ -1,8 +1,10 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout.jsx'
+import AuthForm from '../components/AuthForm.jsx'
 import { useAuth } from '../AuthContext.jsx'
-import { errorMessage, supabase } from '../supabase.js'
+import { errorMessage } from '../supabase.js'
+import { clearDraft, loadDraft, markPending, saveDraft, submitBooking } from '../draft.js'
 import { PACKAGES, PRICES, TIME_SLOTS, calcPrice, formatRsd } from '../config.js'
 
 function tomorrow() {
@@ -15,56 +17,67 @@ function tomorrow() {
 const STORAGE_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 const monthsLabel = (m) => (m === 1 ? 'mesec' : m < 5 ? 'meseca' : 'meseci')
 
+const EMPTY_FORM = {
+  packageId: 'twoSets',
+  tires: 4,
+  address: '',
+  city: 'Beograd',
+  phone: '',
+  note: '',
+  date: '',
+  slot: '',
+  storage: false,
+  storageMonths: 6,
+}
+
 export default function Booking() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, profile } = useAuth()
-  const [form, setForm] = useState({
-    packageId: 'twoSets',
-    tires: 4,
-    address: '',
-    city: 'Beograd',
-    phone: profile?.phone || '',
-    note: '',
-    date: '',
-    slot: '',
-    storage: false,
-    storageMonths: 6,
-  })
-  const [error, setError] = useState('')
+  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, ...loadDraft() }))
+  const [error, setError] = useState(location.state?.error || '')
   const [busy, setBusy] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
 
   const set = (name, value) => setForm((f) => ({ ...f, [name]: value }))
   const update = (e) => set(e.target.name, e.target.value)
   const price = calcPrice(form)
   const pkg = PACKAGES[form.packageId]
 
+  // Čuva unete podatke dok korisnik popunjava (preživi osvežavanje i prijavu)
+  useEffect(() => {
+    saveDraft(form)
+  }, [form])
+
+  useEffect(() => {
+    if (profile?.phone && !form.phone) set('phone', profile.phone)
+  }, [profile])
+
   const submit = async (e) => {
     e.preventDefault()
     if (!form.slot) return setError('Izaberite termin.')
-    setBusy(true)
     setError('')
-    const { error } = await supabase.from('bookings').insert({
-      user_id: user.id,
-      package_id: form.packageId,
-      tires: form.tires,
-      address: form.address.trim(),
-      city: form.city.trim(),
-      phone: form.phone.trim(),
-      note: form.note.trim(),
-      date: form.date,
-      slot: form.slot,
-      storage: form.storage,
-      storage_months: form.storage ? form.storageMonths : 0,
-    })
+
+    if (!user) {
+      markPending()
+      setShowAuth(true)
+      return
+    }
+
+    setBusy(true)
+    const { error } = await submitBooking(user.id, form)
     setBusy(false)
     if (error) return setError(errorMessage(error))
-    navigate('/', { state: { booked: true } })
+    clearDraft()
+    navigate('/moje-rezervacije', { state: { booked: true } })
   }
 
   return (
     <AppLayout>
-      <Link to="/" className="back-link">← Nazad</Link>
-      <h1 className="page-title">Nova rezervacija</h1>
+      <section className="intro">
+        <h1>Zamena guma na vašoj adresi</h1>
+        <p className="muted">Izaberite paket, recite nam gde je auto i kada vam odgovara. Ostalo je na nama.</p>
+      </section>
 
       <form onSubmit={submit} className="booking-layout">
         <div className="booking-steps">
@@ -107,7 +120,7 @@ export default function Booking() {
               </div>
               <label>
                 Kontakt telefon
-                <input type="tel" name="phone" value={form.phone} onChange={update} required />
+                <input type="tel" name="phone" value={form.phone} onChange={update} placeholder="06x xxx xxxx" required autoComplete="tel" />
               </label>
               <label>
                 <span>Napomena <span className="optional">(opciono)</span></span>
@@ -176,6 +189,19 @@ export default function Booking() {
           <p className="summary-note">Plaćanje nakon izvršene usluge.</p>
         </aside>
       </form>
+
+      {showAuth && !user && (
+        <div className="modal-backdrop" onClick={() => setShowAuth(false)}>
+          <div className="card modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close" aria-label="Zatvori" onClick={() => setShowAuth(false)}>×</button>
+            <h2>Još samo jedan korak</h2>
+            <p className="muted">
+              Napravite nalog ili se prijavite da bismo poslali rezervaciju ({formatRsd(price.total)}). Vaši podaci su sačuvani.
+            </p>
+            <AuthForm initialMode="register" phone={form.phone} redirectPath="/" />
+          </div>
+        </div>
+      )}
     </AppLayout>
   )
 }

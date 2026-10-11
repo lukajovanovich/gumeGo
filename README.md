@@ -38,3 +38,13 @@ dozvoljavaju samo adminu da vidi tuđe rezervacije i menja statuse, čak i ako n
 Cene su upisane na dva mesta i moraju da se poklapaju:
 - `src/config.js`: prikaz u aplikaciji
 - `supabase/schema.sql`, funkcija `compute_booking_price`: prava cena koja se upisuje u bazu
+
+## Prijava preko Google-a
+
+1. https://console.cloud.google.com → napravi projekat → **APIs & Services → OAuth consent screen**
+   (External, ime aplikacije, tvoj email) → **Publish app**.
+2. **Credentials → Create credentials → OAuth client ID** → tip **Web application**.
+   - Authorized JavaScript origins: link sajta (npr. `https://gume-go.vercel.app`) i `http://localhost:5173`
+   - Authorized redirect URIs: `https://rcvllsegfpzllyisfuqz.supabase.co/auth/v1/callback`
+3. Kopiraj **Client ID** i **Client secret** u Supabase: **Authentication → Sign In / Providers → Google** → Enable → Save.
+4. Supabase **Authentication → URL Configuration → Redirect URLs**: dodaj `https://<tvoj-sajt>/**` i `http://localhost:5173/**`.

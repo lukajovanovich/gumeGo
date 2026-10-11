@@ -24,7 +24,7 @@ export default function Home() {
 
   useEffect(() => {
     load()
-  }, [])
+  }, [location.key]) // ponovo učitaj i kad stigne nova rezervacija posle prijave
 
   const cancel = async (id) => {
     if (!confirm('Da li sigurno želite da otkažete rezervaciju?')) return
@@ -42,7 +42,7 @@ export default function Home() {
           <h1>Zdravo, {profile?.full_name.split(' ')[0] || 'dobro došli'}!</h1>
           <p className="muted">Zakažite zamenu guma, a mi dolazimo do vašeg auta.</p>
         </div>
-        <Link to="/rezervacija" className="btn-primary btn-inline">+ Nova rezervacija</Link>
+        <Link to="/" className="btn-primary btn-inline">+ Nova rezervacija</Link>
       </section>
 
       <h2 className="section-title">Moje rezervacije</h2>

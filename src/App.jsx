@@ -1,10 +1,12 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import Login from './pages/Login.jsx'
-import Register from './pages/Register.jsx'
 import Home from './pages/Home.jsx'
 import Booking from './pages/Booking.jsx'
 import Admin from './pages/Admin.jsx'
 import { useAuth } from './AuthContext.jsx'
+import { clearDraft, clearPending, isPending, loadDraft, submitBooking } from './draft.js'
+import { errorMessage } from './supabase.js'
 
 function Loading() {
   return <div className="loading-screen">Učitavanje…</div>
@@ -27,18 +29,46 @@ function RequireAdmin({ children }) {
 function GuestOnly({ children }) {
   const { session, loading } = useAuth()
   if (loading) return <Loading />
-  return session ? <Navigate to="/" replace /> : children
+  return session ? <Navigate to="/moje-rezervacije" replace /> : children
+}
+
+// Kad se korisnik prijavi/registruje usred rezervacije, šalje sačuvanu rezervaciju
+function PendingBooking() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (!user || started.current || !isPending()) return
+    const draft = loadDraft()
+    if (!draft) return clearPending()
+    started.current = true
+    clearPending()
+    submitBooking(user.id, draft).then(({ error }) => {
+      started.current = false
+      if (error) {
+        navigate('/', { state: { error: errorMessage(error) } })
+      } else {
+        clearDraft()
+        navigate('/moje-rezervacije', { state: { booked: true } })
+      }
+    })
+  }, [user])
+
+  return null
 }
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
-      <Route path="/registracija" element={<GuestOnly><Register /></GuestOnly>} />
-      <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
-      <Route path="/rezervacija" element={<RequireAuth><Booking /></RequireAuth>} />
-      <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <PendingBooking />
+      <Routes>
+        <Route path="/" element={<Booking />} />
+        <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
+        <Route path="/moje-rezervacije" element={<RequireAuth><Home /></RequireAuth>} />
+        <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }

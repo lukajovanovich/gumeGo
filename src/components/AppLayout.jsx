@@ -15,7 +15,7 @@ export function BrandLogo() {
 }
 
 export default function AppLayout({ children, wide = false }) {
-  const { profile, isAdmin, signOut } = useAuth()
+  const { user, profile, isAdmin, signOut } = useAuth()
 
   return (
     <div className="app-page">
@@ -25,13 +25,18 @@ export default function AppLayout({ children, wide = false }) {
           <BrandLogo />
           <span className="brand-name">{APP_NAME}</span>
         </Link>
-        <div className="header-right">
-          {isAdmin && (
-            <NavLink to="/admin" className="admin-link">Admin</NavLink>
+        <nav className="header-right">
+          {user ? (
+            <>
+              <NavLink to="/moje-rezervacije" className="nav-link">Moje rezervacije</NavLink>
+              {isAdmin && <NavLink to="/admin" className="admin-link">Admin</NavLink>}
+              <span className="user-name">{profile?.full_name}</span>
+              <button className="btn-link" onClick={signOut}>Odjavi se</button>
+            </>
+          ) : (
+            <Link to="/login" className="btn-link">Prijavi se</Link>
           )}
-          <span className="user-name">{profile?.full_name}</span>
-          <button className="btn-link" onClick={signOut}>Odjavi se</button>
-        </div>
+        </nav>
       </header>
       <main className={`app-main ${wide ? 'app-main--wide' : ''}`}>{children}</main>
     </div>
