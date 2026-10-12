@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout.jsx'
+import AdminTabs from '../components/AdminTabs.jsx'
+import { guessStoredSeason } from '../tireSets.js'
 import { errorMessage, supabase } from '../supabase.js'
 import { PACKAGES, STATUSES, formatDate, formatRsd, windowLabel } from '../config.js'
 
@@ -14,6 +17,7 @@ const FILTERS = [
 const mapsLink = (b) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${b.address}, ${b.city}`)}`
 
 export default function Admin() {
+  const navigate = useNavigate()
   const [bookings, setBookings] = useState(null)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('active')
@@ -22,7 +26,7 @@ export default function Admin() {
   const load = async () => {
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, profiles(full_name, email), cars(make_model, plate, tire_size, summer_tires, winter_tires)')
+      .select('*, profiles(full_name, email), cars(make_model, plate, tire_size, summer_tires, winter_tires), tire_sets(id, code)')
       .order('date', { ascending: true })
       .order('pickup_from', { ascending: true })
     if (error) setError(errorMessage(error))
@@ -37,6 +41,26 @@ export default function Admin() {
     const { error } = await supabase.from('bookings').update({ status }).eq('id', id)
     if (error) return setError(errorMessage(error))
     setBookings((list) => list.map((b) => (b.id === id ? { ...b, status } : b)))
+  }
+
+  // Pravi novi set u skladištu iz rezervacije i otvara ga (slike, QR, nalepnice)
+  const storeTires = async (b) => {
+    const season = guessStoredSeason()
+    const tireText = season === 'summer' ? b.cars?.summer_tires : b.cars?.winter_tires
+    const { data, error } = await supabase
+      .from('tire_sets')
+      .insert({
+        user_id: b.user_id,
+        booking_id: b.id,
+        car_id: b.car_id,
+        tires: b.tires,
+        season,
+        description: [tireText, b.cars?.tire_size].filter(Boolean).join(', '),
+      })
+      .select('id')
+      .single()
+    if (error) return setError(errorMessage(error))
+    navigate(`/skladiste/${data.id}`)
   }
 
   const stats = useMemo(() => {
@@ -62,6 +86,7 @@ export default function Admin() {
   return (
     <AppLayout wide>
       <h1 className="page-title">Admin panel</h1>
+      <AdminTabs />
 
       <div className="stats">
         <div className="card stat"><span>Na čekanju</span><strong>{stats.pending}</strong></div>
@@ -112,6 +137,15 @@ export default function Admin() {
                   </span>
                 )}
                 {b.storage && <span className="tag">Čuvanje guma</span>}
+                {b.tire_sets?.length > 0 ? (
+                  b.tire_sets.map((t) => (
+                    <Link key={t.id} to={`/skladiste/${t.id}`} className="set-link">🏷️ {t.code}</Link>
+                  ))
+                ) : (
+                  b.storage && b.status !== 'cancelled' && (
+                    <button className="btn-link" onClick={() => storeTires(b)}>+ Uskladišti gume</button>
+                  )
+                )}
                 <strong>{formatRsd(b.price_total)}</strong>
               </div>
               <select className={`status-select status--${b.status}`} value={b.status} onChange={(e) => changeStatus(b.id, e.target.value)}>

@@ -4,12 +4,14 @@ import AppLayout from '../components/AppLayout.jsx'
 import { useAuth } from '../AuthContext.jsx'
 import { errorMessage, supabase } from '../supabase.js'
 import { PACKAGES, STATUSES, formatDate, formatRsd, windowLabel } from '../config.js'
+import { SEASONS, formatDay, storageMonth } from '../tireSets.js'
 
 export default function Home() {
   const { user, profile } = useAuth()
   const location = useLocation()
   const [bookings, setBookings] = useState(null)
   const [error, setError] = useState('')
+  const [tireSets, setTireSets] = useState([])
   const justBooked = location.state?.booked
 
   const load = async () => {
@@ -20,6 +22,14 @@ export default function Home() {
       .order('created_at', { ascending: false })
     if (error) setError(errorMessage(error))
     setBookings(data || [])
+
+    const { data: sets } = await supabase
+      .from('tire_sets')
+      .select('id, code, season, tires, stored_at')
+      .eq('user_id', user.id)
+      .eq('status', 'stored')
+      .order('stored_at')
+    setTireSets(sets || [])
   }
 
   useEffect(() => {
@@ -44,6 +54,24 @@ export default function Home() {
         </div>
         <Link to="/" className="btn-primary btn-inline">+ Nova rezervacija</Link>
       </section>
+
+      {tireSets.length > 0 && (
+        <>
+          <h2 className="section-title">Moje gume u skladištu</h2>
+          <div className="set-list">
+            {tireSets.map((s) => (
+              <Link key={s.id} to={`/skladiste/${s.id}`} className="card set-item">
+                <div className="set-thumb"><span>🛞</span></div>
+                <div className="set-info">
+                  <strong className="set-code-sm">{s.code}</strong>
+                  <span>{SEASONS[s.season]} gume · {s.tires} kom</span>
+                  <span className="muted-sm">Čuvamo od {formatDay(s.stored_at)} · {storageMonth(s.stored_at)}. mesec</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
 
       <h2 className="section-title">Moje rezervacije</h2>
       {error && <p className="error">{error}</p>}

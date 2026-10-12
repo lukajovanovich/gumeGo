@@ -6,6 +6,8 @@ import Booking from './pages/Booking.jsx'
 import Admin from './pages/Admin.jsx'
 import Garage from './pages/Garage.jsx'
 import About from './pages/About.jsx'
+import AdminStorage from './pages/AdminStorage.jsx'
+import TireSet from './pages/TireSet.jsx'
 import { useAuth } from './AuthContext.jsx'
 import { clearDraft, clearPending, isPending, loadDraft, submitBooking } from './draft.js'
 import { errorMessage } from './supabase.js'
@@ -74,6 +76,8 @@ export default function App() {
         <Route path="/garaza" element={<RequireAuth><Garage /></RequireAuth>} />
         <Route path="/o-nama" element={<About />} />
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
+        <Route path="/admin/skladiste" element={<RequireAdmin><AdminStorage /></RequireAdmin>} />
+        <Route path="/skladiste/:id" element={<RequireAuth><TireSet /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
