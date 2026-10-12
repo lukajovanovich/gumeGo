@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import Login from './pages/Login.jsx'
 import Home from './pages/Home.jsx'
 import Booking from './pages/Booking.jsx'
 import Admin from './pages/Admin.jsx'
+import Garage from './pages/Garage.jsx'
+import About from './pages/About.jsx'
 import { useAuth } from './AuthContext.jsx'
 import { clearDraft, clearPending, isPending, loadDraft, submitBooking } from './draft.js'
 import { errorMessage } from './supabase.js'
@@ -14,8 +16,10 @@ function Loading() {
 
 function RequireAuth({ children }) {
   const { session, loading } = useAuth()
+  const location = useLocation()
   if (loading) return <Loading />
-  return session ? children : <Navigate to="/login" replace />
+  // Pamti stranicu, da se posle prijave korisnik vrati na nju
+  return session ? children : <Navigate to="/login" replace state={{ from: location.pathname }} />
 }
 
 // Samo sakriva stranicu – pravu zaštitu podataka radi baza (RLS u supabase/schema.sql)
@@ -28,8 +32,9 @@ function RequireAdmin({ children }) {
 
 function GuestOnly({ children }) {
   const { session, loading } = useAuth()
+  const location = useLocation()
   if (loading) return <Loading />
-  return session ? <Navigate to="/moje-rezervacije" replace /> : children
+  return session ? <Navigate to={location.state?.from || '/moje-rezervacije'} replace /> : children
 }
 
 // Kad se korisnik prijavi/registruje usred rezervacije, šalje sačuvanu rezervaciju
@@ -66,6 +71,8 @@ export default function App() {
         <Route path="/" element={<Booking />} />
         <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
         <Route path="/moje-rezervacije" element={<RequireAuth><Home /></RequireAuth>} />
+        <Route path="/garaza" element={<RequireAuth><Garage /></RequireAuth>} />
+        <Route path="/o-nama" element={<About />} />
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

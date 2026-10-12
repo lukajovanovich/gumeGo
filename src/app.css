@@ -21,7 +21,6 @@
 }
 .brand--small { margin: 0; text-decoration: none; color: inherit; }
 .brand--small .brand-logo { width: 32px; height: 32px; }
-.header-right { display: flex; align-items: center; gap: 16px; font-size: 0.9rem; }
 .user-name { color: var(--muted); }
 
 .app-main { position: relative; max-width: 1080px; margin: 0 auto; padding: 28px 16px 60px; }
@@ -132,7 +131,6 @@ textarea:focus, select:focus { outline: none; border-color: var(--primary); box-
 @media (max-width: 560px) {
   .package-grid, .row--address { grid-template-columns: 1fr; }
   .app-header { padding: 12px 16px; }
-  .user-name { display: none; }
   .card { padding: 20px 16px; }
 }
 
@@ -230,7 +228,95 @@ a.btn-link { text-decoration: none; }
 .divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--muted); font-size: 0.8rem; }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-@media (max-width: 560px) {
-  .nav-link { font-size: 0.85rem; }
-  .header-right { gap: 12px; }
+
+/* ---------- Navigacija ---------- */
+.header-menu { display: flex; align-items: center; gap: 28px; font-size: 0.9rem; }
+.main-nav { display: flex; align-items: center; gap: 20px; }
+.header-account { display: flex; align-items: center; gap: 14px; padding-left: 20px; border-left: 1px solid var(--border); }
+.menu-toggle {
+  display: none;
+  width: 40px; height: 40px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: #fff; color: var(--text); font-size: 1.2rem; cursor: pointer;
 }
+
+@media (max-width: 860px) {
+  .menu-toggle { display: grid; place-items: center; }
+  .header-menu {
+    display: none;
+    position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    padding: 8px 16px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 16px 30px rgba(31, 60, 45, 0.12);
+  }
+  .header-menu--open { display: flex; }
+  .main-nav { flex-direction: column; align-items: stretch; gap: 0; }
+  .main-nav a { padding: 13px 4px; border-bottom: 1px solid var(--bg-2); font-size: 1rem; }
+  .main-nav .admin-link { margin-top: 10px; text-align: center; border-bottom: 1px solid #b4e5cc; }
+  .header-account { justify-content: space-between; padding: 14px 4px 0; border-left: none; font-size: 1rem; }
+}
+
+/* ---------- Datum na telefonu ne sme da viri ---------- */
+input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-height: 48px;
+  text-align: left;
+}
+input[type='date']::-webkit-date-and-time-value { text-align: left; }
+
+/* ---------- Zajedničko ---------- */
+.intro--row { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.btn-small { padding: 9px 14px; margin: 0; font-size: 0.875rem; }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.form-actions button { width: auto; padding: 12px 22px; margin: 0; }
+.tag--green { background: #dff5ea; color: #146a48; }
+select { width: 100%; min-width: 0; }
+
+/* ---------- Izbor vozila u rezervaciji ---------- */
+.car-picker { margin-bottom: 16px; }
+.car-picker label { display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem; font-weight: 600; }
+.car-picker a { color: var(--primary); font-weight: 600; }
+
+/* ---------- Moja garaža ---------- */
+.car-form { margin-bottom: 20px; }
+.car-form h2 { margin: 0; font-size: 1.1rem; }
+.car-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.car { display: flex; flex-direction: column; gap: 14px; }
+.car-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.car h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.plate {
+  display: inline-block; padding: 2px 8px;
+  border: 2px solid var(--text); border-radius: 5px;
+  font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em; background: #fff;
+}
+.car-details { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 0.9rem; }
+.car-details dt { color: var(--muted); }
+.car-details dd { margin: 0; font-weight: 600; }
+.car-actions { display: flex; align-items: center; gap: 16px; margin-top: auto; padding-top: 6px; }
+
+/* ---------- O nama ---------- */
+.about-hero { padding: 36px 32px; }
+.about-hero h1 { margin: 0 0 12px; font-size: clamp(1.6rem, 4vw, 2.3rem); letter-spacing: -0.03em; max-width: 680px; }
+.about-hero p { margin: 0 0 22px; color: var(--muted); font-size: 1.05rem; line-height: 1.6; max-width: 680px; }
+.about-steps, .about-prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.about-step h3, .about-price h3 { margin: 10px 0 6px; font-size: 1.05rem; }
+.about-step p, .about-price p { margin: 0; line-height: 1.5; }
+.about-icon { font-size: 1.8rem; }
+.about-price h3 { margin-top: 0; }
+.about-price .package-price { margin: 4px 0 10px; display: block; }
+.faq { padding: 8px 24px; }
+.faq details { border-bottom: 1px solid var(--border); }
+.faq details:last-child { border-bottom: none; }
+.faq summary { padding: 16px 0; font-weight: 700; cursor: pointer; }
+.faq details p { margin: 0 0 16px; line-height: 1.6; }
+
+@media (max-width: 760px) {
+  .about-steps, .about-prices { grid-template-columns: 1fr; }
+  .about-hero { padding: 26px 20px; }
+}
+.form .toggle { flex-direction: row; }
+.row > * { min-width: 0; }

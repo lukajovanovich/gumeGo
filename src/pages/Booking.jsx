@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout.jsx'
 import AuthForm from '../components/AuthForm.jsx'
 import { useAuth } from '../AuthContext.jsx'
-import { errorMessage } from '../supabase.js'
-import { clearDraft, loadDraft, markPending, saveDraft, submitBooking } from '../draft.js'
-import { PACKAGES, PRICES, TIME_SLOTS, calcPrice, formatRsd } from '../config.js'
+import { errorMessage, supabase } from '../supabase.js'
+import { EMPTY_FORM, clearDraft, loadDraft, markPending, saveDraft, submitBooking } from '../draft.js'
+import { PACKAGES, PRICES, WINDOW, calcPrice, formatRsd, hourToTime } from '../config.js'
 
 function tomorrow() {
   const d = new Date()
@@ -14,35 +14,48 @@ function tomorrow() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-const STORAGE_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i)
+
+const STORAGE_MONTHS = range(1, 12)
 const monthsLabel = (m) => (m === 1 ? 'mesec' : m < 5 ? 'meseca' : 'meseci')
 
-const EMPTY_FORM = {
-  packageId: 'twoSets',
-  tires: 4,
-  address: '',
-  city: 'Beograd',
-  phone: '',
-  note: '',
-  date: '',
-  slot: '',
-  storage: false,
-  storageMonths: 6,
+// Drži prozor ispravnim: vraćanje uvek bar minHours posle preuzimanja
+function normalizeWindow(f) {
+  const gap = WINDOW.minHours[f.packageId]
+  const pickupFrom = Math.min(f.pickupFrom, WINDOW.lastHour - gap)
+  const returnBy = Math.max(f.returnBy, pickupFrom + gap)
+  return { ...f, pickupFrom, returnBy }
+}
+
+const WINDOW_TEXT = {
+  twoSets: {
+    from: 'Auto je dostupan od',
+    to: 'Auto je dostupan do',
+    hint: 'Zamena traje oko 30 minuta. Dolazimo u bilo koje vreme u ovom periodu.',
+  },
+  oneSet: {
+    from: 'Preuzimanje najranije u',
+    to: 'Vraćanje najkasnije do',
+    hint: 'Auto vozimo u skladište i vraćamo ga isti dan. Ceo posao traje oko 2 sata.',
+  },
 }
 
 export default function Booking() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, profile } = useAuth()
-  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, ...loadDraft() }))
+  const [form, setForm] = useState(() => normalizeWindow({ ...EMPTY_FORM, ...loadDraft() }))
+  const [cars, setCars] = useState([])
   const [error, setError] = useState(location.state?.error || '')
   const [busy, setBusy] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
 
-  const set = (name, value) => setForm((f) => ({ ...f, [name]: value }))
+  const set = (name, value) => setForm((f) => normalizeWindow({ ...f, [name]: value }))
   const update = (e) => set(e.target.name, e.target.value)
   const price = calcPrice(form)
   const pkg = PACKAGES[form.packageId]
+  const gap = WINDOW.minHours[form.packageId]
+  const windowText = WINDOW_TEXT[form.packageId]
 
   // Čuva unete podatke dok korisnik popunjava (preživi osvežavanje i prijavu)
   useEffect(() => {
@@ -53,9 +66,33 @@ export default function Booking() {
     if (profile?.phone && !form.phone) set('phone', profile.phone)
   }, [profile])
 
+  // Vozila iz garaže; auto može da stigne i sa stranice Moja garaža
+  useEffect(() => {
+    if (!user) {
+      setCars([])
+      if (form.carId) set('carId', '')
+      return
+    }
+    supabase
+      .from('cars')
+      .select('*')
+      .order('created_at')
+      .then(({ data }) => {
+        const list = data || []
+        setCars(list)
+        const wanted = location.state?.carId || form.carId
+        const car = list.find((c) => c.id === wanted)
+        if (car) chooseCar(car)
+        else if (form.carId) set('carId', '')
+      })
+  }, [user?.id])
+
+  const chooseCar = (car) => {
+    setForm((f) => normalizeWindow({ ...f, carId: car?.id || '', packageId: car ? (car.two_sets ? 'twoSets' : 'oneSet') : f.packageId }))
+  }
+
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.slot) return setError('Izaberite termin.')
     setError('')
 
     if (!user) {
@@ -83,6 +120,27 @@ export default function Booking() {
         <div className="booking-steps">
           <section className="card step">
             <h2><span className="step-num">1</span> Izaberite paket</h2>
+
+            {user && (
+              <div className="car-picker">
+                {cars.length > 0 ? (
+                  <label>
+                    Vozilo
+                    <select value={form.carId} onChange={(e) => chooseCar(cars.find((c) => c.id === e.target.value))}>
+                      <option value="">— bez izbora vozila —</option>
+                      {cars.map((c) => (
+                        <option key={c.id} value={c.id}>{c.make_model}{c.plate ? ` · ${c.plate}` : ''}</option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <p className="muted-sm">
+                    Sačuvajte auto i gume u <Link to="/garaza">Mojoj garaži</Link> i sledeći put samo izaberite vozilo.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="package-grid">
               {Object.values(PACKAGES).map((p) => (
                 <label key={p.id} className={`package ${form.packageId === p.id ? 'package--active' : ''}`}>
@@ -136,13 +194,25 @@ export default function Booking() {
                 Datum
                 <input type="date" name="date" value={form.date} onChange={update} min={tomorrow()} required />
               </label>
-              <div className="slots">
-                {TIME_SLOTS.map((s) => (
-                  <button type="button" key={s} className={`slot ${form.slot === s ? 'slot--active' : ''}`} onClick={() => set('slot', s)}>
-                    {s}
-                  </button>
-                ))}
+              <div className="row">
+                <label>
+                  {windowText.from}
+                  <select value={form.pickupFrom} onChange={(e) => set('pickupFrom', Number(e.target.value))}>
+                    {range(WINDOW.firstHour, WINDOW.lastHour - gap).map((h) => (
+                      <option key={h} value={h}>{hourToTime(h)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {windowText.to}
+                  <select value={form.returnBy} onChange={(e) => set('returnBy', Number(e.target.value))}>
+                    {range(form.pickupFrom + gap, WINDOW.lastHour).map((h) => (
+                      <option key={h} value={h}>{hourToTime(h)}</option>
+                    ))}
+                  </select>
+                </label>
               </div>
+              <p className="muted-sm">{windowText.hint}</p>
             </div>
           </section>
 

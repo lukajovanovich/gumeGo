@@ -1,6 +1,7 @@
 // Nedovršena rezervacija se čuva u browseru, da preživi registraciju i
 // preusmeravanje na Google prijavu. Posle prijave šalje je PendingBooking (App.jsx).
 import { supabase } from './supabase.js'
+import { hourToTime } from './config.js'
 
 const DRAFT_KEY = 'gumego_draft'
 const PENDING_KEY = 'gumego_pending'
@@ -22,9 +23,26 @@ function write(key, value) {
   }
 }
 
+export const EMPTY_FORM = {
+  packageId: 'twoSets',
+  tires: 4,
+  carId: '',
+  address: '',
+  city: 'Beograd',
+  phone: '',
+  note: '',
+  date: '',
+  pickupFrom: 9,
+  returnBy: 17,
+  storage: false,
+  storageMonths: 6,
+}
+
+// Spaja sa podrazumevanim vrednostima, da i stari sačuvani nacrti imaju sva polja
 export function loadDraft() {
   try {
-    return JSON.parse(read(DRAFT_KEY)) || null
+    const draft = JSON.parse(read(DRAFT_KEY))
+    return draft ? { ...EMPTY_FORM, ...draft } : null
   } catch {
     return null
   }
@@ -52,7 +70,9 @@ export function submitBooking(userId, form) {
     phone: form.phone.trim(),
     note: form.note.trim(),
     date: form.date,
-    slot: form.slot,
+    pickup_from: hourToTime(form.pickupFrom),
+    return_by: hourToTime(form.returnBy),
+    car_id: form.carId || null,
     storage: form.storage,
     storage_months: form.storage ? form.storageMonths : 0,
   })

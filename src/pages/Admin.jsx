@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import AppLayout from '../components/AppLayout.jsx'
 import { errorMessage, supabase } from '../supabase.js'
-import { PACKAGES, STATUSES, formatDate, formatRsd } from '../config.js'
+import { PACKAGES, STATUSES, formatDate, formatRsd, windowLabel } from '../config.js'
 
 const FILTERS = [
   { id: 'active', label: 'Aktivne', match: (b) => ['pending', 'confirmed', 'in_progress'].includes(b.status) },
@@ -22,9 +22,9 @@ export default function Admin() {
   const load = async () => {
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, profiles(full_name, email)')
+      .select('*, profiles(full_name, email), cars(make_model, plate, tire_size, summer_tires, winter_tires)')
       .order('date', { ascending: true })
-      .order('slot', { ascending: true })
+      .order('pickup_from', { ascending: true })
     if (error) setError(errorMessage(error))
     setBookings(data || [])
   }
@@ -93,7 +93,7 @@ export default function Admin() {
             <article key={b.id} className={`card admin-booking ${b.status === 'cancelled' ? 'booking--cancelled' : ''}`}>
               <div className="admin-when">
                 <strong>{formatDate(b.date)}</strong>
-                <span>{b.slot}</span>
+                <span>{windowLabel(b)}</span>
               </div>
               <div className="admin-who">
                 <strong>{b.profiles?.full_name || '—'}</strong>
@@ -106,6 +106,11 @@ export default function Admin() {
               </div>
               <div className="admin-what">
                 <span>{PACKAGES[b.package_id].name} · {b.tires} gume</span>
+                {b.cars && (
+                  <span className="muted-sm">
+                    🚗 {b.cars.make_model}{b.cars.plate ? ` · ${b.cars.plate}` : ''}{b.cars.tire_size ? ` · ${b.cars.tire_size}` : ''}
+                  </span>
+                )}
                 {b.storage && <span className="tag">Čuvanje {b.storage_months} mes.</span>}
                 <strong>{formatRsd(b.price_total)}</strong>
               </div>

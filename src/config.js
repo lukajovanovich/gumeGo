@@ -24,7 +24,17 @@ export const PACKAGES = {
   },
 }
 
-export const TIME_SLOTS = ['08:00 – 10:00', '10:00 – 12:00', '12:00 – 14:00', '14:00 – 16:00', '16:00 – 18:00']
+// Vremenski prozor: od kad je auto dostupan do kad mora biti vraćen
+export const WINDOW = {
+  firstHour: 7,
+  lastHour: 20,
+  minHours: { twoSets: 1, oneSet: 2 }, // koliko najmanje sati treba za posao
+}
+
+export const hourToTime = (h) => `${String(h).padStart(2, '0')}:00`
+
+// "09:00:00" iz baze → "09:00"; stare rezervacije imaju samo slot
+export const windowLabel = (b) => (b.pickup_from ? `${b.pickup_from.slice(0, 5)} – ${b.return_by.slice(0, 5)}` : b.slot)
 
 // Cene se računaju i u bazi (supabase/schema.sql) – ovo je samo za prikaz
 export function calcPrice({ packageId, tires, storage, storageMonths }) {

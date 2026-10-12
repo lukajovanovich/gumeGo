@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import AppLayout from '../components/AppLayout.jsx'
 import { useAuth } from '../AuthContext.jsx'
 import { errorMessage, supabase } from '../supabase.js'
-import { PACKAGES, STATUSES, formatDate, formatRsd } from '../config.js'
+import { PACKAGES, STATUSES, formatDate, formatRsd, windowLabel } from '../config.js'
 
 export default function Home() {
   const { user, profile } = useAuth()
@@ -15,7 +15,7 @@ export default function Home() {
   const load = async () => {
     const { data, error } = await supabase
       .from('bookings')
-      .select('*')
+      .select('*, cars(make_model)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     if (error) setError(errorMessage(error))
@@ -60,8 +60,9 @@ export default function Home() {
                 <span className={`status status--${b.status}`}>{STATUSES[b.status]}</span>
               </div>
               <div className="booking-details">
-                <span>📅 {formatDate(b.date)}, {b.slot}</span>
+                <span>📅 {formatDate(b.date)}, {windowLabel(b)}</span>
                 <span>📍 {b.address}, {b.city}</span>
+                {b.cars && <span>🚗 {b.cars.make_model}</span>}
                 <span>🛞 {b.tires} gume{b.storage ? ` · čuvanje ${b.storage_months} mes.` : ''}</span>
               </div>
               <div className="booking-bottom">
