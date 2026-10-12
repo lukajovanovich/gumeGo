@@ -63,7 +63,7 @@ export default function Home() {
                 <span>📅 {formatDate(b.date)}, {windowLabel(b)}</span>
                 <span>📍 {b.address}, {b.city}</span>
                 {b.cars && <span>🚗 {b.cars.make_model}</span>}
-                <span>🛞 {b.tires} gume{b.storage ? ` · čuvanje ${b.storage_months} mes.` : ''}</span>
+                <span>🛞 {b.tires} gume{b.storage ? ' · čuvanje guma' : ''}</span>
               </div>
               <div className="booking-bottom">
                 <span className="price">{formatRsd(b.price_total)}</span>

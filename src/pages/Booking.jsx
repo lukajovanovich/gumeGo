@@ -16,8 +16,6 @@ function tomorrow() {
 
 const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i)
 
-const STORAGE_MONTHS = range(1, 12)
-const monthsLabel = (m) => (m === 1 ? 'mesec' : m < 5 ? 'meseca' : 'meseci')
 
 // Drži prozor ispravnim: vraćanje uvek bar minHours posle preuzimanja
 function normalizeWindow(f) {
@@ -222,19 +220,12 @@ export default function Booking() {
               <input type="checkbox" checked={form.storage} onChange={(e) => set('storage', e.target.checked)} />
               <span>
                 <strong>Želim da mi čuvate gume do sledeće sezone</strong>
-                <small>{formatRsd(PRICES.storagePerTirePerMonth)} po gumi mesečno. Gume čuvamo u suvom i bezbednom skladištu.</small>
+                <small>
+                  {formatRsd(PRICES.storagePerTirePerMonth)} po gumi mesečno, naplaćuje se svakog meseca dok su gume kod nas.
+                  Gume čuvamo u suvom i bezbednom skladištu.
+                </small>
               </span>
             </label>
-            {form.storage && (
-              <div className="field-inline">
-                <span>Period čuvanja</span>
-                <select value={form.storageMonths} onChange={(e) => set('storageMonths', Number(e.target.value))}>
-                  {STORAGE_MONTHS.map((m) => (
-                    <option key={m} value={m}>{m} {monthsLabel(m)}</option>
-                  ))}
-                </select>
-              </div>
-            )}
           </section>
         </div>
 
@@ -246,14 +237,17 @@ export default function Booking() {
           </div>
           {form.storage && (
             <div className="summary-line">
-              <span>Čuvanje guma<br /><small>{formatRsd(price.storageMonthly)} / mes. × {form.storageMonths}</small></span>
-              <span>{formatRsd(price.storageTotal)}</span>
+              <span>Čuvanje guma, prvi mesec<br /><small>{form.tires} × {formatRsd(PRICES.storagePerTirePerMonth)}</small></span>
+              <span>{formatRsd(price.storageMonthly)}</span>
             </div>
           )}
           <div className="summary-total">
             <span>Ukupno</span>
             <span>{formatRsd(price.total)}</span>
           </div>
+          {form.storage && (
+            <p className="summary-note">Zatim {formatRsd(price.storageMonthly)} mesečno za čuvanje guma.</p>
+          )}
           {error && <p className="error">{error}</p>}
           <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Šaljem…' : 'Pošalji rezervaciju'}</button>
           <p className="summary-note">Plaćanje nakon izvršene usluge.</p>

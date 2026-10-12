@@ -111,7 +111,7 @@ export default function Admin() {
                     🚗 {b.cars.make_model}{b.cars.plate ? ` · ${b.cars.plate}` : ''}{b.cars.tire_size ? ` · ${b.cars.tire_size}` : ''}
                   </span>
                 )}
-                {b.storage && <span className="tag">Čuvanje {b.storage_months} mes.</span>}
+                {b.storage && <span className="tag">Čuvanje guma</span>}
                 <strong>{formatRsd(b.price_total)}</strong>
               </div>
               <select className={`status-select status--${b.status}`} value={b.status} onChange={(e) => changeStatus(b.id, e.target.value)}>

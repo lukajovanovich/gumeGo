@@ -35,7 +35,6 @@ export const EMPTY_FORM = {
   pickupFrom: 9,
   returnBy: 17,
   storage: false,
-  storageMonths: 6,
 }
 
 // Spaja sa podrazumevanim vrednostima, da i stari sačuvani nacrti imaju sva polja
@@ -74,6 +73,6 @@ export function submitBooking(userId, form) {
     return_by: hourToTime(form.returnBy),
     car_id: form.carId || null,
     storage: form.storage,
-    storage_months: form.storage ? form.storageMonths : 0,
+    storage_months: form.storage ? 1 : 0, // baza naplaćuje ovoliko meseci unapred
   })
 }

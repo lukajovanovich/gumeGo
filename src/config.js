@@ -37,11 +37,11 @@ export const hourToTime = (h) => `${String(h).padStart(2, '0')}:00`
 export const windowLabel = (b) => (b.pickup_from ? `${b.pickup_from.slice(0, 5)} – ${b.return_by.slice(0, 5)}` : b.slot)
 
 // Cene se računaju i u bazi (supabase/schema.sql) – ovo je samo za prikaz
-export function calcPrice({ packageId, tires, storage, storageMonths }) {
+// Čuvanje se naplaćuje mesečno – u ukupnu cenu ulazi samo prvi mesec
+export function calcPrice({ packageId, tires, storage }) {
   const service = PACKAGES[packageId].pricePerTire * tires
   const storageMonthly = storage ? PRICES.storagePerTirePerMonth * tires : 0
-  const storageTotal = storageMonthly * (storage ? storageMonths : 0)
-  return { service, storageMonthly, storageTotal, total: service + storageTotal }
+  return { service, storageMonthly, total: service + storageMonthly }
 }
 
 export const formatRsd = (n) => `${n.toLocaleString('sr-RS')} RSD`
